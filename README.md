@@ -10,23 +10,23 @@ Workload Identity Federation pool and GitHub OIDC provider, restricted to one Gi
 - One pool per project: `name` is the pool id (4 to 32 characters) and the provider id is always `github`. An empty `repositories` map is valid; the pool and provider are created without bindings.
 - Pools and providers accept no labels; `labels` and `context.extra_tags` are merged and exposed through the `labels` output only.
 - The service account's `roles/iam.workloadIdentityUser` binding is the only IAM this module grants; the service accounts themselves, and their permissions, are managed elsewhere.
+- `context.extra_tags` keys and values are normalised to valid GCP label syntax (lowercase, `[^a-z0-9_-]` → `-`, 63 chars); `labels` are applied verbatim and win.
 
 ## Usage
 
 ```hcl
-module "this" {
-  source = "git::https://github.com/Olensys/terraform-google-github-workload-identity.git?ref=v1.0.0"
+module "naming" {
+  source  = "git::https://github.com/Olensys/terraform-null-naming.git?ref=v1.0.1"
+  context = var.context
+}
 
-  name       = "example-github"
+module "this" {
+  source = "git::https://github.com/Olensys/terraform-google-github-workload-identity.git?ref=v1.1.0"
+
+  name       = module.naming.name
   project_id = "my-project"
   github_org = "my-org"
-  context = {
-    organization = "olensys"
-    environment  = "dev"
-    application  = "example"
-    owner        = "platform"
-    cost_center  = "eng"
-  }
+  context = var.context
 
   repositories = {
     app = {
@@ -35,6 +35,7 @@ module "this" {
       branches              = ["main"]
     }
   }
+  labels  = module.naming.labels
 }
 ```
 
