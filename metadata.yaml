@@ -1,10 +1,10 @@
 name: terraform-google-github-workload-identity
-cloud: google          # aws | google | common
+cloud: google
 tier: capability          # primitive | capability | blueprint
 maturity: experimental    # experimental | stable | deprecated
 description: Workload Identity Federation pool and GitHub OIDC provider, restricted to one GitHub organisation, with per-repository service account bindings
 owners: [platform]
-upstream: null            # e.g. "terraform-aws-modules/s3-bucket/aws 5.17.0"
-pairs_with: null          # e.g. "terraform-google-gcs-bucket"
+upstream: null
+pairs_with: terraform-aws-github-oidc-role
 registry_name: terraform-google-github-workload-identity
 deprecated: null          # { removal: YYYY-MM-DD, replacement: <repo> }
