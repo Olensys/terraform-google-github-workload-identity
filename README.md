@@ -1,6 +1,6 @@
-# __NAME__
+# terraform-google-github-workload-identity
 
-__DESCRIPTION__
+Workload Identity Federation pool and GitHub OIDC provider, restricted to one GitHub organisation, with per-repository service account bindings
 
 ## Opinions
 
@@ -10,7 +10,7 @@ __DESCRIPTION__
 
 ```hcl
 module "this" {
-  source = "git::https://github.com/Olensys/__NAME__.git?ref=v1.0.0"
+  source = "git::https://github.com/Olensys/terraform-google-github-workload-identity.git?ref=v1.0.0"
 
   name = "example"
   context = {
