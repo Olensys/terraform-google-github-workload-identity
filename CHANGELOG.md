@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.2](https://github.com/Olensys/terraform-google-github-workload-identity/compare/v1.1.1...v1.1.2) (2026-10-24)
+
+
+### Bug Fixes
+
+* bind on repository and ref attributes so immutable OIDC subjects work ([#2](https://github.com/Olensys/terraform-google-github-workload-identity/issues/2)) ([0018d6f](https://github.com/Olensys/terraform-google-github-workload-identity/commit/0018d6f3d3e691f648ee2c9b0c00cdffe9240f1e))
+* **examples:** unique application slug so concurrent integration runs do not collide ([#4](https://github.com/Olensys/terraform-google-github-workload-identity/issues/4)) ([1aa4281](https://github.com/Olensys/terraform-google-github-workload-identity/commit/1aa42814a6b8f2b0555c6ad66d5eda64b7aeeb13))
+
 ## [1.1.1](https://github.com/Olensys/terraform-google-github-workload-identity/compare/v1.1.0...v1.1.1) (2026-10-24)
 
 
