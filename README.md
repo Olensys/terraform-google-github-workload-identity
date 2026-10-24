@@ -54,6 +54,10 @@ Authenticate from a workflow (requires `permissions: id-token: write`):
 
 Set `workload_identity_provider` to the `provider_name` output and `service_account` to the email passed in `repositories[*].service_account_email`.
 
+## Integration testing
+
+Deleted workload identity pools stay reserved for 30 days, so the integration test uses a unique pool name per run.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
