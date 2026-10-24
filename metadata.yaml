@@ -1,7 +1,7 @@
 name: terraform-google-github-workload-identity
 cloud: google
 tier: capability          # primitive | capability | blueprint
-maturity: experimental    # experimental | stable | deprecated
+maturity: stable    # experimental | stable | deprecated
 description: Workload Identity Federation pool and GitHub OIDC provider, restricted to one GitHub organisation, with per-repository service account bindings
 owners: [platform]
 upstream: null
