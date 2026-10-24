@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/Olensys/terraform-google-github-workload-identity/compare/v1.1.0...v1.1.1) (2026-10-24)
+
+
+### Bug Fixes
+
+* run integration on change and weekly instead of nightly ([8b2443c](https://github.com/Olensys/terraform-google-github-workload-identity/commit/8b2443c1f288044c1fc6b8472c626931969cf4ca))
+
 ## 1.1.0
 
 ### Fixes
