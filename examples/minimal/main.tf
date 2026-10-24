@@ -19,13 +19,13 @@ variable "service_account_email" {
 module "this" {
   source = "../../"
 
-  name       = "example-github"
+  name       = "olensys-test-wlif"
   project_id = var.project_id
   github_org = "example-org"
   context = {
     organization = "olensys"
     environment  = "test"
-    application  = "example"
+    application  = "wlif"
     owner        = "platform"
     cost_center  = "eng"
   }
