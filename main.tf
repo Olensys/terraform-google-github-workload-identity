@@ -3,12 +3,14 @@ locals {
   substr(replace(lower(k), "/[^a-z0-9_-]/", "-"), 0, 63) => substr(replace(lower(v), "/[^a-z0-9_-]/", "-"), 0, 63) }
   labels = merge(local.extra_labels, var.labels)
 
-  # One exact subject per environment and per branch. No repository-wide
-  # principalSet is ever granted.
+  # One exact attribute value per environment and per branch, bound as a
+  # principalSet on a repository+ref / repository+environment pair. GitHub's
+  # immutable subject (repo:ORG@ID/REPO@ID:...) is never matched directly, and
+  # no repository-wide or organisation-wide principalSet is ever granted.
   subjects = {
     for repo, cfg in var.repositories : repo => concat(
-      [for e in cfg.environments : "repo:${var.github_org}/${repo}:environment:${e}"],
-      [for b in cfg.branches : "repo:${var.github_org}/${repo}:ref:refs/heads/${b}"],
+      [for e in cfg.environments : "attribute.repository_environment/${var.github_org}/${repo}:${e}"],
+      [for b in cfg.branches : "attribute.repository_ref/${var.github_org}/${repo}:refs/heads/${b}"],
     )
   }
 
@@ -45,6 +47,10 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "attribute.repository_owner" = "assertion.repository_owner"
     "attribute.ref"              = "assertion.ref"
     "attribute.environment"      = "assertion.environment"
+
+    # Pairs used by the bindings; they do not depend on the format of the sub claim.
+    "attribute.repository_ref"         = "assertion.repository + \":\" + assertion.ref"
+    "attribute.repository_environment" = "assertion.repository + \":\" + assertion.environment"
   }
 
   attribute_condition = "assertion.repository_owner == \"${var.github_org}\""
@@ -59,5 +65,5 @@ resource "google_service_account_iam_member" "wif" {
 
   service_account_id = "projects/${var.project_id}/serviceAccounts/${each.value.service_account_email}"
   role               = "roles/iam.workloadIdentityUser"
-  member             = "principal://iam.googleapis.com/${google_iam_workload_identity_pool.this[0].name}/subject/${each.value.subject}"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this[0].name}/${each.value.subject}"
 }
