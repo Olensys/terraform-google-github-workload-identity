@@ -24,8 +24,12 @@ output "pool_name" {
 }
 
 output "subjects" {
-  description = "Map of repository name to the exact GitHub subjects bound to its service account. Null when create is false."
-  value       = var.create ? local.subjects : null
+  description = "Map of repository name to the principalSet members bound to its service account (on attribute.repository_ref and attribute.repository_environment). Null when create is false."
+  value = var.create ? {
+    for repo, subs in local.subjects : repo => [
+      for s in subs : "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.this[0].name}/${s}"
+    ]
+  } : null
 }
 
 output "labels" {

@@ -41,21 +41,45 @@ run "test_member_per_repository" {
   }
 }
 
-run "test_branch_subject_format" {
+run "test_attribute_mapping_has_ref_and_environment_pairs" {
   command = plan
 
   assert {
-    condition     = contains(output.subjects["api"], "repo:acme/api:ref:refs/heads/main")
-    error_message = "Branch subject must be repo:<org>/<repo>:ref:refs/heads/<branch>."
+    condition     = google_iam_workload_identity_pool_provider.github[0].attribute_mapping["attribute.repository_ref"] == "assertion.repository + \":\" + assertion.ref"
+    error_message = "attribute.repository_ref must combine repository and ref."
+  }
+
+  assert {
+    condition     = google_iam_workload_identity_pool_provider.github[0].attribute_mapping["attribute.repository_environment"] == "assertion.repository + \":\" + assertion.environment"
+    error_message = "attribute.repository_environment must combine repository and environment."
+  }
+
+  assert {
+    condition     = google_iam_workload_identity_pool_provider.github[0].attribute_mapping["google.subject"] == "assertion.sub"
+    error_message = "google.subject must stay assertion.sub."
   }
 }
 
-run "test_environment_subject_format" {
-  command = plan
+run "test_branch_member_format" {
+  command = apply
 
   assert {
-    condition     = contains(output.subjects["web"], "repo:acme/web:environment:prod")
-    error_message = "Environment subject must be repo:<org>/<repo>:environment:<env>."
+    condition     = contains(output.subjects["api"], "principalSet://iam.googleapis.com/${output.pool_name}/attribute.repository_ref/acme/api:refs/heads/main")
+    error_message = "Branch member must be a principalSet on attribute.repository_ref."
+  }
+}
+
+run "test_environment_member_format" {
+  command = apply
+
+  assert {
+    condition     = contains(output.subjects["web"], "principalSet://iam.googleapis.com/${output.pool_name}/attribute.repository_environment/acme/web:prod")
+    error_message = "Environment member must be a principalSet on attribute.repository_environment."
+  }
+
+  assert {
+    condition     = alltrue([for m in values(google_service_account_iam_member.wif)[*].member : startswith(m, "principalSet://")])
+    error_message = "No principal:// subject member may remain."
   }
 }
 

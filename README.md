@@ -5,12 +5,16 @@ Workload Identity Federation pool and GitHub OIDC provider, restricted to one Gi
 ## Opinions
 
 - One GitHub organisation per pool: the provider's attribute condition is `assertion.repository_owner == "<github_org>"`, so tokens from any other owner are rejected before any binding is evaluated.
-- Exact-subject bindings only. Each environment becomes `repo:<org>/<repo>:environment:<env>` and each branch `repo:<org>/<repo>:ref:refs/heads/<branch>`, bound with a `principal://` member. No `principalSet` over a whole repository or organisation is ever granted; wildcard characters in environment and branch names are rejected.
+- Exact-subject bindings only. Each environment is bound as a `principalSet` on `attribute.repository_environment/<org>/<repo>:<env>` and each branch on `attribute.repository_ref/<org>/<repo>:refs/heads/<branch>`. No `principalSet` over a whole repository or organisation is ever granted; wildcard characters in environment and branch names are rejected.
 - Every repository must declare at least one environment or branch (branches default to `["main"]`).
 - One pool per project: `name` is the pool id (4 to 32 characters) and the provider id is always `github`. An empty `repositories` map is valid; the pool and provider are created without bindings.
 - Pools and providers accept no labels; `labels` and `context.extra_tags` are merged and exposed through the `labels` output only.
 - The service account's `roles/iam.workloadIdentityUser` binding is the only IAM this module grants; the service accounts themselves, and their permissions, are managed elsewhere.
 - `context.extra_tags` keys and values are normalised to valid GCP label syntax (lowercase, `[^a-z0-9_-]` → `-`, 63 chars); `labels` are applied verbatim and win.
+
+## Immutable OIDC subjects
+
+GitHub can issue tokens whose `sub` claim is `repo:ORG@ORG_ID/REPO@REPO_ID:ref:refs/heads/BRANCH` (immutable subject), instead of `repo:ORG/REPO:...`. Bindings on the `sub` string (`principal://.../subject/...`) therefore never match. This module binds on claims that do not change with the subject format: the provider maps `attribute.repository_ref` (`assertion.repository + ":" + assertion.ref`) and `attribute.repository_environment` (`assertion.repository + ":" + assertion.environment`), and each service account gets a `principalSet` on those attributes, for example `principalSet://iam.googleapis.com/<pool>/attribute.repository_ref/my-org/app:refs/heads/main`. `google.subject` stays `assertion.sub`. The provider's attribute condition still requires `assertion.repository_owner == "<github_org>"`, so tokens from other owners are rejected first. The `subjects` output lists these member strings.
 
 ## Usage
 
@@ -98,5 +102,5 @@ No modules.
 | <a name="output_pool_name"></a> [pool\_name](#output\_pool\_name) | Full resource name of the workload identity pool. Null when create is false. |
 | <a name="output_provider_name"></a> [provider\_name](#output\_provider\_name) | Full resource name of the GitHub provider; pass as workload\_identity\_provider to google-github-actions/auth. Null when create is false. |
 | <a name="output_self_link"></a> [self\_link](#output\_self\_link) | Full resource name of the pool (projects/<number>/locations/global/workloadIdentityPools/<name>). Null when create is false. |
-| <a name="output_subjects"></a> [subjects](#output\_subjects) | Map of repository name to the exact GitHub subjects bound to its service account. Null when create is false. |
+| <a name="output_subjects"></a> [subjects](#output\_subjects) | Map of repository name to the principalSet members bound to its service account (on attribute.repository\_ref and attribute.repository\_environment). Null when create is false. |
 <!-- END_TF_DOCS -->
