@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/Olensys/terraform-google-github-workload-identity/compare/v1.1.2...v1.1.3) (2026-10-24)
+
+
+### Bug Fixes
+
+* **examples:** unique pool name per integration run ([#5](https://github.com/Olensys/terraform-google-github-workload-identity/issues/5)) ([cf38b9a](https://github.com/Olensys/terraform-google-github-workload-identity/commit/cf38b9a7cba8ff47579a3ffc4415a4156d8c01a8))
+
 ## [1.1.2](https://github.com/Olensys/terraform-google-github-workload-identity/compare/v1.1.1...v1.1.2) (2026-10-24)
 
 
