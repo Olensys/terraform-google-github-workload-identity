@@ -3,6 +3,11 @@
 run "apply_minimal" {
   command = apply
 
+  # Deleted workload identity pools stay reserved for 30 days, so every run needs a fresh name.
+  variables {
+    name = "olensys-it-${formatdate("YYYYMMDDhhmmss", timestamp())}"
+  }
+
   module {
     source = "./examples/minimal"
   }

@@ -16,10 +16,16 @@ variable "service_account_email" {
   type        = string
 }
 
+variable "name" {
+  description = "Workload identity pool id. Deleted pools stay reserved for 30 days, so repeated test runs pass a unique value."
+  type        = string
+  default     = "olensys-test-wlif"
+}
+
 module "this" {
   source = "../../"
 
-  name       = "olensys-test-wlif"
+  name       = var.name
   project_id = var.project_id
   github_org = "example-org"
   context = {
