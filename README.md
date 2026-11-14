@@ -4,13 +4,31 @@ Workload Identity Federation pool and GitHub OIDC provider, restricted to one Gi
 
 ## Opinions
 
-- One GitHub organisation per pool: the provider's attribute condition is `assertion.repository_owner == "<github_org>"`, so tokens from any other owner are rejected before any binding is evaluated.
+- One GitHub organisation per pool: by default the provider's attribute condition is `assertion.repository_owner == "<github_org>"`, so tokens from any other owner are rejected before any binding is evaluated. `attribute_condition` overrides that expression entirely (for example to adopt an existing provider); a caller who overrides it is responsible for keeping the organisation restriction in place.
 - Exact-subject bindings only. Each environment is bound as a `principalSet` on `attribute.repository_environment/<org>/<repo>:<env>` and each branch on `attribute.repository_ref/<org>/<repo>:refs/heads/<branch>`. No `principalSet` over a whole repository or organisation is ever granted; wildcard characters in environment and branch names are rejected.
 - Every repository must declare at least one environment or branch (branches default to `["main"]`).
-- One pool per project: `name` is the pool id (4 to 32 characters) and the provider id is always `github`. An empty `repositories` map is valid; the pool and provider are created without bindings.
+- One pool per project: `name` is the pool id (4 to 32 characters) and the provider id defaults to `github` (`provider_id`). Display names default to the pool id and `github`; `pool_display_name` and `provider_display_name` override them. An empty `repositories` map is valid; the pool and provider are created without bindings.
 - Pools and providers accept no labels; `labels` and `context.extra_tags` are merged and exposed through the `labels` output only.
 - The service account's `roles/iam.workloadIdentityUser` binding is the only IAM this module grants; the service accounts themselves, and their permissions, are managed elsewhere.
 - `context.extra_tags` keys and values are normalised to valid GCP label syntax (lowercase, `[^a-z0-9_-]` → `-`, 63 chars); `labels` are applied verbatim and win.
+
+## Adopting an existing pool and provider
+
+Every input above has a default equal to the value the module used to hard-code, so existing callers see no plan diff. To import a pool and provider created elsewhere, set the inputs to the live values and run:
+
+```hcl
+import {
+  to = module.this.google_iam_workload_identity_pool.this[0]
+  id = "projects/my-project/locations/global/workloadIdentityPools/<pool_id>"
+}
+
+import {
+  to = module.this.google_iam_workload_identity_pool_provider.github[0]
+  id = "projects/my-project/locations/global/workloadIdentityPools/<pool_id>/providers/<provider_id>"
+}
+```
+
+`extra_attribute_mapping` adds entries to, or overrides entries in, the module's default attribute mapping. A full replacement is not offered because the service account bindings are `principalSet` members on `attribute.repository_ref` and `attribute.repository_environment`; a `lifecycle` precondition on the provider rejects any plan that changes or drops those two keys.
 
 ## Immutable OIDC subjects
 
@@ -92,8 +110,13 @@ No modules.
 | <a name="input_github_org"></a> [github\_org](#input\_github\_org) | GitHub organisation allowed to authenticate. Tokens from any other owner are rejected by the provider attribute condition. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Workload identity pool id. Lowercase letters, digits and hyphens, 4 to 32 characters (the provider limit). | `string` | n/a | yes |
 | <a name="input_project_id"></a> [project\_id](#input\_project\_id) | Project that hosts the workload identity pool and the service accounts. | `string` | n/a | yes |
+| <a name="input_attribute_condition"></a> [attribute\_condition](#input\_attribute\_condition) | CEL attribute condition of the OIDC provider. Null (default) uses assertion.repository\_owner == "<github\_org>". An override takes the place of that check entirely, so keeping tokens restricted to the organisation becomes the caller's responsibility. | `string` | `null` | no |
 | <a name="input_create"></a> [create](#input\_create) | Whether to create any resources. Set false to plan nothing. | `bool` | `true` | no |
+| <a name="input_extra_attribute_mapping"></a> [extra\_attribute\_mapping](#input\_extra\_attribute\_mapping) | Attribute mappings merged over the module's default map; a key that exists in the default map overrides it. attribute.repository\_ref and attribute.repository\_environment drive the service account bindings and cannot be changed (a precondition on the provider rejects the plan). Keys must start with google. or attribute. (for example attribute.workflow). | `map(string)` | `{}` | no |
 | <a name="input_labels"></a> [labels](#input\_labels) | Labels merged onto every labelable resource, applied last. Workload identity pools and providers accept no labels, so these are only exposed through the labels output for callers to reuse. | `map(string)` | `{}` | no |
+| <a name="input_pool_display_name"></a> [pool\_display\_name](#input\_pool\_display\_name) | Display name of the workload identity pool. Null (default) uses name. Set it to adopt an existing pool whose display name differs from its id. | `string` | `null` | no |
+| <a name="input_provider_display_name"></a> [provider\_display\_name](#input\_provider\_display\_name) | Display name of the OIDC provider. Default github. | `string` | `"github"` | no |
+| <a name="input_provider_id"></a> [provider\_id](#input\_provider\_id) | Id of the OIDC provider inside the pool. Default github. Set it to adopt an existing provider created under another id; changing it on a managed provider forces a new one. | `string` | `"github"` | no |
 | <a name="input_repositories"></a> [repositories](#input\_repositories) | Map of repository name (without the organisation) to the service account it may impersonate and the environments and branches allowed. Each environment and branch becomes one exact subject binding. | <pre>map(object({<br/>    service_account_email = string<br/>    environments          = optional(list(string), [])<br/>    branches              = optional(list(string), ["main"])<br/>  }))</pre> | `{}` | no |
 
 ## Outputs
