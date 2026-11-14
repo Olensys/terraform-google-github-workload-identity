@@ -22,6 +22,27 @@ locals {
       }
     }
   ]...)
+
+  # Pairs used by the bindings; they do not depend on the format of the sub
+  # claim. Callers may add or override other entries through
+  # extra_attribute_mapping, but these two must stay as they are.
+  binding_attribute_mapping = {
+    "attribute.repository_ref"         = "assertion.repository + \":\" + assertion.ref"
+    "attribute.repository_environment" = "assertion.repository + \":\" + assertion.environment"
+  }
+
+  default_attribute_mapping = merge({
+    "google.subject"             = "assertion.sub"
+    "attribute.actor"            = "assertion.actor"
+    "attribute.repository"       = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+    "attribute.ref"              = "assertion.ref"
+    "attribute.environment"      = "assertion.environment"
+  }, local.binding_attribute_mapping)
+
+  attribute_mapping = merge(local.default_attribute_mapping, var.extra_attribute_mapping)
+
+  attribute_condition = var.attribute_condition == null ? "assertion.repository_owner == \"${var.github_org}\"" : var.attribute_condition
 }
 
 resource "google_iam_workload_identity_pool" "this" {
@@ -29,7 +50,7 @@ resource "google_iam_workload_identity_pool" "this" {
 
   project                   = var.project_id
   workload_identity_pool_id = var.name
-  display_name              = var.name
+  display_name              = var.pool_display_name == null ? var.name : var.pool_display_name
 }
 
 resource "google_iam_workload_identity_pool_provider" "github" {
@@ -37,26 +58,23 @@ resource "google_iam_workload_identity_pool_provider" "github" {
 
   project                            = var.project_id
   workload_identity_pool_id          = google_iam_workload_identity_pool.this[0].workload_identity_pool_id
-  workload_identity_pool_provider_id = "github"
-  display_name                       = "github"
+  workload_identity_pool_provider_id = var.provider_id
+  display_name                       = var.provider_display_name
 
-  attribute_mapping = {
-    "google.subject"             = "assertion.sub"
-    "attribute.actor"            = "assertion.actor"
-    "attribute.repository"       = "assertion.repository"
-    "attribute.repository_owner" = "assertion.repository_owner"
-    "attribute.ref"              = "assertion.ref"
-    "attribute.environment"      = "assertion.environment"
-
-    # Pairs used by the bindings; they do not depend on the format of the sub claim.
-    "attribute.repository_ref"         = "assertion.repository + \":\" + assertion.ref"
-    "attribute.repository_environment" = "assertion.repository + \":\" + assertion.environment"
-  }
-
-  attribute_condition = "assertion.repository_owner == \"${var.github_org}\""
+  attribute_mapping   = local.attribute_mapping
+  attribute_condition = local.attribute_condition
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+
+  lifecycle {
+    precondition {
+      condition = alltrue([
+        for k, v in local.binding_attribute_mapping : lookup(local.attribute_mapping, k, null) == v
+      ])
+      error_message = "extra_attribute_mapping must not change attribute.repository_ref or attribute.repository_environment; the service account bindings depend on them."
+    }
   }
 }
 
